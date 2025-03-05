@@ -12,7 +12,16 @@ exports.getAllProducts = async (req, res) => {
         required: false
       }]
     });
-    res.json(products);
+
+    const productsWithDiscount = products.map(product => {
+      const productJson = product.toJSON();
+      if (productJson.discount) {
+        productJson.discountedPrice = productJson.price - (productJson.price * (productJson.discount.percentage / 100));
+      }
+      return productJson;
+    });
+
+    res.json(productsWithDiscount);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -92,9 +101,14 @@ exports.applyDiscount = async (req, res) => {
     
     await product.update({ discount_id: discountId });
     
+    const discountedPrice = product.price - (product.price * (discount.percentage / 100));
+    
     res.json({ 
       message: "Descuento aplicado correctamente", 
-      product 
+      product: {
+        ...product.toJSON(),
+        discountedPrice
+      }
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
